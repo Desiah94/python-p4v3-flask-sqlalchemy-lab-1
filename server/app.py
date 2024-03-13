@@ -7,7 +7,7 @@ from models import db, Earthquake
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.json_encoder = None
+
 
 migrate = Migrate(app, db)
 db.init_app(app)
@@ -24,14 +24,40 @@ def get_earthquake(id):
 
     # If no earthquake is found, return an error message
     if earthquake is None:
-        return make_response(jsonify({'error': 'Earthquake not found'}), 404)
+        return make_response(jsonify({'message': f'Earthquake {id} not found.'}), 404)
 
     # If an earthquake is found, return its attributes as a JSON string
     return jsonify({
         'id': earthquake.id,
         'location': earthquake.location,
         'magnitude': earthquake.magnitude,
+        'year': earthquake.year,
+        'message': f'Earthquake {id} found.'
+    })
+
+
+
+
+@app.route('/earthquakes/magnitude/<float:magnitude>')
+def get_earthquakes_by_magnitude(magnitude):
+    # Query the database for earthquakes with magnitudes greater than or equal to the parameter value
+    earthquakes = Earthquake.query.filter(Earthquake.magnitude >= magnitude).all()
+
+    # Count the matching rows
+    count = len(earthquakes)
+
+    # Prepare a list containing the data for each row
+    earthquakes_data = [{
+        'id': earthquake.id,
+        'location': earthquake.location,
+        'magnitude': earthquake.magnitude,
         'year': earthquake.year
+    } for earthquake in earthquakes]
+
+    # Return a JSON response containing the count and the list of earthquake data
+    return jsonify({
+        'count': count,
+        'quakes': earthquakes_data  # Change 'earthquakes' to 'quakes'
     })
 
 if __name__ == '__main__':
